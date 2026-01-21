@@ -1,8 +1,7 @@
 **nonstd** is a single-header C library providing a collection of "non-standard"
 but highly useful utilities, data structures, and type definitions that are
 often missing from the C standard library. It aims to make C programming more
-ergonomic and productive without the overhead of large frameworks. It aims to be
-C99 compliant.
+ergonomic and productive. It aims to be C99 compliant.
 
 > [!IMPORTANT]
 > There are more involved libraries out there providing better granularity
