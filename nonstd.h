@@ -203,7 +203,7 @@ NONSTD_DEF stringv sb_as_sv(const stringb *sb);
 		 _i_##var < (arr).length && ((var) = (arr).data[_i_##var], 1); \
 		 ++_i_##var)
 
-#define array_foreach_i(arr, var, index) \
+#define array_foreach_idx(arr, var, index) \
 	for (size_t index = 0;               \
 		 index < (arr).length && ((var) = (arr).data[index], 1); ++index)
 

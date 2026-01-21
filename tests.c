@@ -663,7 +663,7 @@ MU_TEST(test_array_foreach) {
 	array_free(arr);
 }
 
-MU_TEST(test_array_foreach_i) {
+MU_TEST(test_array_foreach_idx) {
 	array(int) arr;
 	array_init(arr);
 	array_push(arr, 10);
@@ -674,7 +674,7 @@ MU_TEST(test_array_foreach_i) {
 	size_t sum_idx = 0;
 	int val;
 
-	array_foreach_i(arr, val, i) {
+	array_foreach_idx(arr, val, i) {
 		sum_val += val;
 		sum_idx += i;
 		mu_assert_int_eq(val, arr.data[i]);
@@ -932,7 +932,7 @@ MU_TEST_SUITE(test_suite_array) {
 	RUN_TEST_WITH_NAME(test_array_reserve);
 	RUN_TEST_WITH_NAME(test_array_clear);
 	RUN_TEST_WITH_NAME(test_array_foreach);
-	RUN_TEST_WITH_NAME(test_array_foreach_i);
+	RUN_TEST_WITH_NAME(test_array_foreach_idx);
 }
 
 MU_TEST_SUITE(test_suite_slice) {

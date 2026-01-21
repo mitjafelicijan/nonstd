@@ -91,8 +91,8 @@ int main(void) {
 	}
 	printf("\n");
 
-	printf("  Using array_foreach_i: ");
-	array_foreach_i(values, val, idx) {
+	printf("  Using array_foreach_idx: ");
+	array_foreach_idx(values, val, idx) {
 		printf("[%zu]=%d ", idx, val);
 	}
 	printf("\n\n");
