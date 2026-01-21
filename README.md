@@ -103,7 +103,7 @@ array_free(numbers);
 Ideal for parsing and passing strings around without allocation.
 
 ```c
-const char* raw = "Hello World";
+const char *raw = "Hello World";
 stringv sv = sv_from_cstr(raw);
 stringv word = sv_slice(sv, 0, 5); // "Hello" (no allocation)
 
@@ -136,8 +136,8 @@ Efficiently allocate many small objects and free them all at once.
 Arena arena = arena_make();
 
 // Allocations are fast and contiguous within blocks
-void* obj1 = arena_alloc(&arena, 64);
-void* obj2 = arena_alloc(&arena, 128);
+void *obj1 = arena_alloc(&arena, 64);
+void *obj2 = arena_alloc(&arena, 128);
 
 // growth is automatic if a block is full
 
@@ -151,7 +151,7 @@ Read or write files with a single functional call.
 
 ```c
 size_t size;
-char* content = read_entire_file("data.txt", &size);
+char *content = read_entire_file("data.txt", &size);
 
 if (content) {
     printf("Read %zu bytes:\n%s\n", size, content);
