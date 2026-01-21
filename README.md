@@ -5,9 +5,9 @@ ergonomic and productive without the overhead of large frameworks. It aims to be
 C99 compliant.
 
 > [!IMPORTANT]
-> There are much better more involved libraries out there. This library is
-> intended for ease of use first and foremost. It is not a replacement for
-> those libraries.
+> There are more involved libraries out there providing better granularity
+> and functionality. This library is intended for ease of use first and
+> foremost. It is not a replacement for those libraries.
 
 ## Features
 
