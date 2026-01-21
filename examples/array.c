@@ -86,11 +86,15 @@ int main(void) {
 
 	printf("  Using array_foreach: ");
 	int val;
-	array_foreach(values, val) { printf("%d ", val); }
+	array_foreach(values, val) {
+		printf("%d ", val);
+	}
 	printf("\n");
 
 	printf("  Using array_foreach_i: ");
-	array_foreach_i(values, val, idx) { printf("[%zu]=%d ", idx, val); }
+	array_foreach_i(values, val, idx) {
+		printf("[%zu]=%d ", idx, val);
+	}
 	printf("\n\n");
 
 	array_free(values);
@@ -107,7 +111,9 @@ int main(void) {
 
 	printf("  Words: ");
 	const char *word;
-	array_foreach(words, word) { printf("%s ", word); }
+	array_foreach(words, word) {
+		printf("%s ", word);
+	}
 	printf("\n\n");
 
 	array_free(words);
@@ -123,7 +129,9 @@ int main(void) {
 
 	printf("  People:\n");
 	Person person;
-	array_foreach(people, person) { printf("    ID: %d, Name: %s\n", person.id, person.name); }
+	array_foreach(people, person) {
+		printf("    ID: %d, Name: %s\n", person.id, person.name);
+	}
 	printf("\n");
 
 	array_free(people);

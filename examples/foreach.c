@@ -8,21 +8,27 @@ int main(void) {
 	int numbers[] = {10, 20, 30, 40, 50};
 	int num; // Declare the loop variable
 
-	static_foreach(int, num, numbers) { printf("  Number: %d\n", num); }
+	static_foreach(int, num, numbers) {
+		printf("  Number: %d\n", num);
+	}
 	printf("\n");
 
 	// Example 2: Iterate over an array of floats
 	float prices[] = {9.99f, 19.99f, 29.99f, 49.99f};
 	float price; // Declare the loop variable
 
-	static_foreach(float, price, prices) { printf("  Price: $%.2f\n", price); }
+	static_foreach(float, price, prices) {
+		printf("  Price: $%.2f\n", price);
+	}
 	printf("\n");
 
 	// Example 3: Iterate over an array of strings
 	const char *fruits[] = {"Apple", "Banana", "Cherry", "Date", "Elderberry"};
 	const char *fruit; // Declare the loop variable
 
-	static_foreach(const char *, fruit, fruits) { printf("  Fruit: %s\n", fruit); }
+	static_foreach(const char *, fruit, fruits) {
+		printf("  Fruit: %s\n", fruit);
+	}
 	printf("\n");
 
 	// Example 4: Perform calculations with static_foreach
@@ -30,7 +36,9 @@ int main(void) {
 	int sum = 0;
 	int val; // Declare the loop variable
 
-	static_foreach(int, val, values) { sum += val; }
+	static_foreach(int, val, values) {
+		sum += val;
+	}
 	printf("  Sum of values: %d\n", sum);
 	printf("\n");
 
@@ -43,7 +51,9 @@ int main(void) {
 	Person people[] = {{"Alice", 25}, {"Bob", 30}, {"Charlie", 35}};
 	Person person; // Declare the loop variable
 
-	static_foreach(Person, person, people) { printf("  %s is %d years old\n", person.name, person.age); }
+	static_foreach(Person, person, people) {
+		printf("  %s is %d years old\n", person.name, person.age);
+	}
 	printf("\n");
 
 	// Example 6: Modify array elements in place
@@ -51,7 +61,9 @@ int main(void) {
 	int n; // Declare the loop variable
 
 	printf("  Before: ");
-	static_foreach(int, n, nums) { printf("%d ", n); }
+	static_foreach(int, n, nums) {
+		printf("%d ", n);
+	}
 	printf("\n");
 
 	// Note: static_foreach creates a copy of each element by default
@@ -61,7 +73,9 @@ int main(void) {
 	}
 
 	printf("  After doubling: ");
-	static_foreach(int, n, nums) { printf("%d ", n); }
+	static_foreach(int, n, nums) {
+		printf("%d ", n);
+	}
 	printf("\n");
 
 	return 0;
