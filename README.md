@@ -1,14 +1,23 @@
-**nonstd** is a single-header C library providing a collection of "non-standard" but highly useful utilities, data structures, and type definitions that are often missing from the C standard library. It aims to make C programming more ergonomic and productive without the overhead of large frameworks.
+**nonstd** is a single-header C library providing a collection of "non-standard"
+but highly useful utilities, data structures, and type definitions that are
+often missing from the C standard library. It aims to make C programming more
+ergonomic and productive without the overhead of large frameworks. It aims to be
+C99 compliant.
+
+> [!IMPORTANT]
+> There are much better more involved libraries out there. This library is
+> intended for ease of use first and foremost. It is not a replacement for
+> those libraries.
 
 ## Features
 
 - **Shorthand Types**: Concise integer types (`i8`, `u32`, `usize`, etc.) for better readability.
 - **Utility Macros**: Common helpers like `countof`, `MIN`, `MAX`, `CLAMP`, and `static_foreach`.
-- **String View (`stringv`)**: Efficient, non-owning, read-only string references to avoid unnecessary copies.
+- **String View (`stringv`)**: Non-owning, read-only string references to avoid unnecessary copies.
 - **String Builder (`stringb`)**: Growable, mutable string buffer for efficient string construction.
-- **Dynamic Array (`array`)**: Type-safe, generic growable arrays implemented via macros (similar to `std::vector` in C++).
+- **Dynamic Array (`array`)**: Generic growable arrays implemented via macros (similar to `std::vector` in C++).
 - **Slices (`slice`)**: Generic non-owning views into arrays.
-- **Memory Arena**: Simple and efficient block-based arena allocator for bulk memory management.
+- **Memory Arena**: Simple block-based arena allocator for bulk memory management.
 - **File I/O**: Helper functions to read and write entire files with a single call.
 
 ## Installation
@@ -16,7 +25,8 @@
 `nonstd` is a single-header library. To use it:
 
 1. Copy `nonstd.h` into your project's include directory.
-2. In **one** C source file, define `NONSTD_IMPLEMENTATION` before including the header to create the implementation:
+2. In **one** C source file, define `NONSTD_IMPLEMENTATION` before including the
+   header to create the implementation:
 
 ```c
 #define NONSTD_IMPLEMENTATION
@@ -30,6 +40,9 @@
 ```
 
 ## Usage
+
+Check the `examples` directory for usage examples. But here are a few simple
+examples:
 
 ### 1. Basic Types & Macros
 
@@ -154,7 +167,7 @@ FREE((void*)file_sv.data); // Note: read_entire_file_sv allocates the data
 
 ## Testing
 
-The project includes a comprehensive test suite using `minunit`.
+The project includes a test suite using `minunit`.
 
 To build and run the tests:
 
