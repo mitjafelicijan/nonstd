@@ -18,6 +18,7 @@ ergonomic and productive. It aims to be C99 compliant.
 - **Slices (`slice`)**: Generic non-owning views into arrays.
 - **Memory Arena**: Simple block-based arena allocator for bulk memory management.
 - **File I/O**: Helper functions to read and write entire files with a single call.
+- **Logging**: Simple, leveled logging with ANSI colors and timestamps.
 
 ## Installation
 
@@ -163,6 +164,24 @@ stringb file_sb = read_entire_file_sb("config.ini");
 // ... use file_sb ...
 sb_free(&file_sb);
 
+```
+
+### 6. Logging
+
+Simple logging with levels (`ERROR`, `WARN`, `INFO`, `DEBUG`), timestamps, and colors.
+
+```c
+// Set log level (default is INFO)
+set_log_level(LOG_DEBUG);
+
+// Use macros for logging
+LOG_INFO_MSG("Starting application...");
+LOG_DEBUG_MSG("Variable x = %d", 42);
+LOG_WARN_MSG("Low memory warning");
+LOG_ERROR_MSG("Connection failed");
+
+// Environment variable override supported:
+// LOG_LEVEL=0 (ERROR) ... 3 (DEBUG)
 ```
 
 ## Testing

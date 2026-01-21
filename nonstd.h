@@ -1,3 +1,9 @@
+#ifdef NONSTD_IMPLEMENTATION
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+#endif
+
 #ifndef NONSTD_H
 #define NONSTD_H
 
@@ -6,6 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #ifndef NONSTD_DEF
 #ifdef NONSTD_STATIC
@@ -88,9 +98,7 @@ NONSTD_DEF void sb_append_char(stringb *sb, char c);
 NONSTD_DEF stringv sb_as_sv(const stringb *sb);
 
 // Slice - generic non-owning view into an array
-// Usage:
-//   SLICE_DEF(int);        // Define slice_int type
-//   slice(int) view = ...; // Use it
+// Usage: SLICE_DEF(int); slice(int) view = ...;
 #define SLICE_DEF(T)   \
 	typedef struct {   \
 		T *data;       \
@@ -228,8 +236,6 @@ NONSTD_DEF stringv sb_as_sv(const stringb *sb);
 		 index < (arr).length && ((var) = (arr).data[index], 1); ++index)
 
 // Arena - block-based memory allocator
-// Usage: Arena a = arena_make(); void* p = arena_alloc(&a, 100);
-// arena_free(&a);
 typedef struct {
 	char *ptr;
 	char *end;
@@ -246,10 +252,32 @@ NONSTD_DEF void arena_free(Arena *a);
 // File I/O helpers
 NONSTD_DEF char *read_entire_file(const char *filepath, size_t *out_size);
 NONSTD_DEF int write_entire_file(const char *filepath, const void *data, size_t size);
-// read_entire_file_sv removed for security (ownership confusion)
 NONSTD_DEF stringb read_entire_file_sb(const char *filepath);
 NONSTD_DEF int write_file_sv(const char *filepath, stringv sv);
 NONSTD_DEF int write_file_sb(const char *filepath, const stringb *sb);
+
+// Logging
+typedef enum {
+	LOG_ERROR,
+	LOG_WARN,
+	LOG_INFO,
+	LOG_DEBUG,
+} LogLevel;
+
+NONSTD_DEF void set_log_level(LogLevel level);
+NONSTD_DEF LogLevel get_log_level_from_env(void);
+NONSTD_DEF void log_message(FILE *stream, LogLevel level, const char *format, ...);
+
+#define LOG_INFO_MSG(...) log_message(stdout, LOG_INFO, __VA_ARGS__)
+#define LOG_DEBUG_MSG(...) log_message(stdout, LOG_DEBUG, __VA_ARGS__)
+#define LOG_WARN_MSG(...) log_message(stderr, LOG_WARN, __VA_ARGS__)
+#define LOG_ERROR_MSG(...) log_message(stderr, LOG_ERROR, __VA_ARGS__)
+
+#define COLOR_RESET "\033[0m"
+#define COLOR_INFO "\033[32m"
+#define COLOR_DEBUG "\033[36m"
+#define COLOR_WARNING "\033[33m"
+#define COLOR_ERROR "\033[31m"
 
 #endif // NONSTD_H
 
@@ -474,8 +502,6 @@ NONSTD_DEF int write_entire_file(const char *filepath, const void *data, size_t 
 	return written == size;
 }
 
-// read_entire_file_sv removed
-
 NONSTD_DEF stringb read_entire_file_sb(const char *filepath) {
 	size_t size = 0;
 	char *data = read_entire_file(filepath, &size);
@@ -494,6 +520,67 @@ NONSTD_DEF int write_file_sv(const char *filepath, stringv sv) {
 
 NONSTD_DEF int write_file_sb(const char *filepath, const stringb *sb) {
 	return write_entire_file(filepath, sb->data, sb->length);
+}
+
+// Logging Implementation
+
+static LogLevel max_level = LOG_INFO;
+
+static const char *level_strings[] = {
+	"ERROR",
+	"WARN",
+	"INFO",
+	"DEBUG",
+};
+
+static const char *level_colors[] = {
+	COLOR_ERROR,
+	COLOR_WARNING,
+	COLOR_INFO,
+	COLOR_DEBUG,
+};
+
+NONSTD_DEF void set_log_level(LogLevel level) {
+	max_level = level;
+}
+
+NONSTD_DEF LogLevel get_log_level_from_env(void) {
+	const char *env = getenv("LOG_LEVEL");
+	if (env) {
+		int level = atoi(env);
+		if (level >= 0 && level <= 3) {
+			return (LogLevel)level;
+		}
+	}
+
+	return max_level;
+}
+
+NONSTD_DEF void log_message(FILE *stream, LogLevel level, const char *format, ...) {
+	if (max_level < level)
+		return;
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	struct tm *tm_info = localtime(&tv.tv_sec);
+
+	char time_str[24];
+	strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
+
+	const char *color = isatty(fileno(stream)) ? level_colors[level] : "";
+	const char *reset = isatty(fileno(stream)) ? COLOR_RESET : "";
+
+	const char *log_format = "%s[%s.%03d] [%-5s] ";
+	fprintf(stream, log_format, color, time_str, (int)(tv.tv_usec / 1000),
+			level_strings[level]);
+
+	va_list args;
+	va_start(args, format);
+	vfprintf(stream, format, args);
+	va_end(args);
+
+	fprintf(stream, "%s\n", reset);
+	fflush(stream);
 }
 
 #endif // NONSTD_IMPLEMENTATION

@@ -5,7 +5,7 @@ CFLAGS = -Wall -Wextra -std=c99 -fsanitize=address -g -O0
 LDFLAGS =
 
 # Example targets
-EXAMPLES = foreach stringv stringb array slice arena files
+EXAMPLES = foreach stringv stringb array slice arena files logging
 
 # Default target
 all: $(EXAMPLES)
@@ -32,6 +32,9 @@ arena: arena.c
 files: files.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
+logging: logging.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
 # Run all examples
 run: all
 	@echo "\n=== Running stringv ===\n"
@@ -48,6 +51,8 @@ run: all
 	@./arena
 	@echo "\n=== Running files ===\n"
 	@./files
+	@echo "\n=== Running logging ===\n"
+	@./logging
 
 # Clean build artifacts
 clean:

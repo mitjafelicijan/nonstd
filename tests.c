@@ -857,6 +857,64 @@ MU_TEST(test_file_io_read_missing_sb) {
 	mu_assert_int_eq(0, sb.length);
 }
 
+// Logging tests
+MU_TEST(test_logging_level_filtering) {
+	FILE *tmp = tmpfile();
+	mu_check(tmp != NULL);
+
+	set_log_level(LOG_WARN);
+
+	log_message(tmp, LOG_INFO, "Info message");   // Should not be logged
+	log_message(tmp, LOG_ERROR, "Error message"); // Should be logged
+
+	rewind(tmp);
+	char buffer[1024];
+	size_t read = fread(buffer, 1, sizeof(buffer), tmp);
+	buffer[read] = '\0';
+
+	mu_check(strstr(buffer, "Info message") == NULL);
+	mu_check(strstr(buffer, "Error message") != NULL);
+	mu_check(strstr(buffer, "[ERROR]") != NULL);
+
+	fclose(tmp);
+}
+
+MU_TEST(test_logging_env_level) {
+	// Enum: ERROR=0, WARN=1, INFO=2, DEBUG=3
+	setenv("LOG_LEVEL", "0", 1); // ERROR
+	mu_assert_int_eq(LOG_ERROR, get_log_level_from_env());
+
+	setenv("LOG_LEVEL", "3", 1); // DEBUG
+	mu_assert_int_eq(LOG_DEBUG, get_log_level_from_env());
+
+	// Invalid level
+	set_log_level(LOG_INFO); // Reset
+	setenv("LOG_LEVEL", "99", 1);
+	mu_assert_int_eq(LOG_INFO, get_log_level_from_env()); // Should return current max_level (defaults check)
+
+	unsetenv("LOG_LEVEL");
+}
+
+MU_TEST(test_logging_format) {
+	FILE *tmp = tmpfile();
+	mu_check(tmp != NULL);
+
+	set_log_level(LOG_INFO);
+	log_message(tmp, LOG_INFO, "Test %d %s", 123, "format");
+
+	rewind(tmp);
+	char buffer[1024];
+	size_t read = fread(buffer, 1, sizeof(buffer), tmp);
+	buffer[read] = '\0';
+
+	mu_check(strstr(buffer, "Test 123 format") != NULL);
+	mu_check(strstr(buffer, "[INFO ]") != NULL);
+	// Check timestamp format roughly (YYYY-MM-DD)
+	mu_check(strstr(buffer, "20") != NULL); 
+
+	fclose(tmp);
+}
+
 // Test suites
 MU_TEST_SUITE(test_suite_stringv) {
 	printf("\n[String View Tests]\n");
@@ -960,6 +1018,13 @@ MU_TEST_SUITE(test_suite_files) {
 	RUN_TEST_WITH_NAME(test_file_io_read_missing_sb);
 }
 
+MU_TEST_SUITE(test_suite_logging) {
+	printf("\n[Logging Tests]\n");
+	RUN_TEST_WITH_NAME(test_logging_level_filtering);
+	RUN_TEST_WITH_NAME(test_logging_env_level);
+	RUN_TEST_WITH_NAME(test_logging_format);
+}
+
 int main(int argc, char *argv[]) {
 	(void)argc;
 	(void)argv;
@@ -972,6 +1037,7 @@ int main(int argc, char *argv[]) {
 	MU_RUN_SUITE(test_suite_types);
 	MU_RUN_SUITE(test_suite_arena);
 	MU_RUN_SUITE(test_suite_files);
+	MU_RUN_SUITE(test_suite_logging);
 
 	MU_REPORT();
 
