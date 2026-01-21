@@ -35,13 +35,16 @@ typedef char c8;
 	for (size_t _i_##var = 0, _n_##var = countof(array); \
 		 _i_##var < _n_##var && ((var) = (array)[_i_##var], 1); ++_i_##var)
 
-#define ALLOC(type, n) ((type *)malloc((n) * sizeof(type)))
-#define REALLOC(ptr, type, n) ((type *)realloc((ptr), (n) * sizeof(type)))
+#define ALLOC(type, n) ((type *)safe_malloc(sizeof(type), (n)))
+#define REALLOC(ptr, type, n) ((type *)safe_realloc((ptr), sizeof(type), (n)))
 #define FREE(ptr)   \
 	do {            \
 		free(ptr);  \
 		ptr = NULL; \
 	} while (0)
+
+NONSTD_DEF void *safe_malloc(size_t item_size, size_t count);
+NONSTD_DEF void *safe_realloc(void *ptr, size_t item_size, size_t count);
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -131,24 +134,36 @@ NONSTD_DEF stringv sb_as_sv(const stringb *sb);
 		(arr).capacity = 0; \
 	} while (0)
 
-#define array_ensure(arr, additional)                                   \
-	do {                                                                \
-		size_t _needed = (arr).length + (additional);                   \
-		if (_needed > (arr).capacity) {                                 \
-			size_t _new_cap = (arr).capacity ? (arr).capacity : 16;     \
-			while (_new_cap < _needed) {                                \
-				_new_cap *= 2;                                          \
-			}                                                           \
-			(arr).data =                                                \
-				REALLOC((arr).data, __typeof__(*(arr).data), _new_cap); \
-			(arr).capacity = _new_cap;                                  \
-		}                                                               \
+#define array_ensure(arr, additional)                                    \
+	do {                                                                 \
+		size_t _needed = (arr).length + (additional);                    \
+		if (_needed > (arr).capacity) {                                  \
+			size_t _new_cap = (arr).capacity ? (arr).capacity : 16;      \
+			while (_new_cap < _needed) {                                 \
+				if (_new_cap > SIZE_MAX / 2) {                           \
+					_new_cap = SIZE_MAX;                                 \
+					break;                                               \
+				}                                                        \
+				_new_cap *= 2;                                           \
+			}                                                            \
+			if (_new_cap < _needed) { /* Overflow or OOM */              \
+				break;                                                   \
+			}                                                            \
+			void *_new_data =                                            \
+				safe_realloc((arr).data, sizeof(*(arr).data), _new_cap); \
+			if (_new_data) {                                             \
+				(arr).data = _new_data;                                  \
+				(arr).capacity = _new_cap;                               \
+			}                                                            \
+		}                                                                \
 	} while (0)
 
-#define array_push(arr, value)                \
-	do {                                      \
-		array_ensure((arr), 1);               \
-		(arr).data[(arr).length++] = (value); \
+#define array_push(arr, value)                    \
+	do {                                          \
+		array_ensure((arr), 1);                   \
+		if ((arr).length < (arr).capacity) {      \
+			(arr).data[(arr).length++] = (value); \
+		}                                         \
 	} while (0)
 
 #define array_pop(arr) ((arr).length > 0 ? (arr).data[--(arr).length] : 0)
@@ -162,16 +177,18 @@ NONSTD_DEF stringv sb_as_sv(const stringb *sb);
 		}                                \
 	} while (0)
 
-#define array_insert(arr, index, value)                          \
-	do {                                                         \
-		if ((index) <= (arr).length) {                           \
-			array_ensure((arr), 1);                              \
-			for (size_t _i = (arr).length; _i > (index); --_i) { \
-				(arr).data[_i] = (arr).data[_i - 1];             \
-			}                                                    \
-			(arr).data[index] = (value);                         \
-			(arr).length++;                                      \
-		}                                                        \
+#define array_insert(arr, index, value)                              \
+	do {                                                             \
+		if ((index) <= (arr).length) {                               \
+			array_ensure((arr), 1);                                  \
+			if ((arr).length < (arr).capacity) {                     \
+				for (size_t _i = (arr).length; _i > (index); --_i) { \
+					(arr).data[_i] = (arr).data[_i - 1];             \
+				}                                                    \
+				(arr).data[index] = (value);                         \
+				(arr).length++;                                      \
+			}                                                        \
+		}                                                            \
 	} while (0)
 
 #define array_remove(arr, index)                                     \
@@ -189,13 +206,16 @@ NONSTD_DEF stringv sb_as_sv(const stringb *sb);
 		(arr).length = 0; \
 	} while (0)
 
-#define array_reserve(arr, new_capacity)                                      \
-	do {                                                                      \
-		if ((new_capacity) > (arr).capacity) {                                \
-			(arr).data =                                                      \
-				REALLOC((arr).data, __typeof__(*(arr).data), (new_capacity)); \
-			(arr).capacity = (new_capacity);                                  \
-		}                                                                     \
+#define array_reserve(arr, new_capacity)                                       \
+	do {                                                                       \
+		if ((new_capacity) > (arr).capacity) {                                 \
+			void *_new_data =                                                  \
+				safe_realloc((arr).data, sizeof(*(arr).data), (new_capacity)); \
+			if (_new_data) {                                                   \
+				(arr).data = _new_data;                                        \
+				(arr).capacity = (new_capacity);                               \
+			}                                                                  \
+		}                                                                      \
 	} while (0)
 
 #define array_foreach(arr, var)                                        \
@@ -204,7 +224,7 @@ NONSTD_DEF stringv sb_as_sv(const stringb *sb);
 		 ++_i_##var)
 
 #define array_foreach_idx(arr, var, index) \
-	for (size_t index = 0;               \
+	for (size_t index = 0;                 \
 		 index < (arr).length && ((var) = (arr).data[index], 1); ++index)
 
 // Arena - block-based memory allocator
@@ -226,7 +246,7 @@ NONSTD_DEF void arena_free(Arena *a);
 // File I/O helpers
 NONSTD_DEF char *read_entire_file(const char *filepath, size_t *out_size);
 NONSTD_DEF int write_entire_file(const char *filepath, const void *data, size_t size);
-NONSTD_DEF stringv read_entire_file_sv(const char *filepath);
+// read_entire_file_sv removed for security (ownership confusion)
 NONSTD_DEF stringb read_entire_file_sb(const char *filepath);
 NONSTD_DEF int write_file_sv(const char *filepath, stringv sv);
 NONSTD_DEF int write_file_sb(const char *filepath, const stringb *sb);
@@ -234,6 +254,20 @@ NONSTD_DEF int write_file_sb(const char *filepath, const stringb *sb);
 #endif // NONSTD_H
 
 #ifdef NONSTD_IMPLEMENTATION
+
+NONSTD_DEF void *safe_malloc(size_t item_size, size_t count) {
+	if (count != 0 && item_size > SIZE_MAX / count) {
+		return NULL;
+	}
+	return malloc(item_size * count);
+}
+
+NONSTD_DEF void *safe_realloc(void *ptr, size_t item_size, size_t count) {
+	if (count != 0 && item_size > SIZE_MAX / count) {
+		return NULL;
+	}
+	return realloc(ptr, item_size * count);
+}
 
 NONSTD_DEF stringv sv_from_cstr(const char *s) {
 	return (stringv){.data = s, .length = s ? strlen(s) : 0};
@@ -285,11 +319,24 @@ NONSTD_DEF void sb_free(stringb *sb) {
 
 NONSTD_DEF void sb_ensure(stringb *sb, size_t additional) {
 	size_t needed = sb->length + additional + 1;
-	if (needed > sb->capacity) {
-		while (sb->capacity < needed) {
-			sb->capacity *= 2;
+	size_t new_cap = sb->capacity;
+
+	if (needed > new_cap) {
+		while (new_cap < needed) {
+			if (new_cap > SIZE_MAX / 2) {
+				new_cap = SIZE_MAX;
+				break;
+			}
+			new_cap *= 2;
 		}
-		sb->data = REALLOC(sb->data, char, sb->capacity);
+		if (new_cap < needed)
+			return; // Overflow
+
+		char *new_data = safe_realloc(sb->data, sizeof(char), new_cap);
+		if (new_data) {
+			sb->data = new_data;
+			sb->capacity = new_cap;
+		}
 	}
 }
 
@@ -299,9 +346,11 @@ NONSTD_DEF void sb_append_cstr(stringb *sb, const char *s) {
 	}
 	size_t slength = strlen(s);
 	sb_ensure(sb, slength);
-	memcpy(sb->data + sb->length, s, slength);
-	sb->length += slength;
-	sb->data[sb->length] = '\0';
+	if (sb->length + slength + 1 <= sb->capacity) {
+		memcpy(sb->data + sb->length, s, slength);
+		sb->length += slength;
+		sb->data[sb->length] = '\0';
+	}
 }
 
 NONSTD_DEF void sb_append_sv(stringb *sb, stringv sv) {
@@ -309,15 +358,19 @@ NONSTD_DEF void sb_append_sv(stringb *sb, stringv sv) {
 		return;
 	}
 	sb_ensure(sb, sv.length);
-	memcpy(sb->data + sb->length, sv.data, sv.length);
-	sb->length += sv.length;
-	sb->data[sb->length] = '\0';
+	if (sb->length + sv.length + 1 <= sb->capacity) {
+		memcpy(sb->data + sb->length, sv.data, sv.length);
+		sb->length += sv.length;
+		sb->data[sb->length] = '\0';
+	}
 }
 
 NONSTD_DEF void sb_append_char(stringb *sb, char c) {
 	sb_ensure(sb, 1);
-	sb->data[sb->length++] = c;
-	sb->data[sb->length] = '\0';
+	if (sb->length + 2 <= sb->capacity) {
+		sb->data[sb->length++] = c;
+		sb->data[sb->length] = '\0';
+	}
 }
 
 NONSTD_DEF stringv sb_as_sv(const stringb *sb) {
@@ -343,12 +396,20 @@ NONSTD_DEF void *arena_alloc(Arena *a, size_t size) {
 	size_t align = sizeof(void *);
 	uintptr_t current = (uintptr_t)a->ptr;
 	uintptr_t aligned = (current + align - 1) & ~(align - 1);
-	uintptr_t available = (uintptr_t)a->end - aligned;
+	uintptr_t end = (uintptr_t)a->end;
 
-	if (available < size) {
+	// Check for overflow (aligned wrapped around) or out of bounds (aligned >= end)
+	// or not enough space ((end - aligned) < size)
+	if (aligned < current || aligned >= end || (end - aligned) < size) {
 		arena_grow(a, size);
 		current = (uintptr_t)a->ptr;
 		aligned = (current + align - 1) & ~(align - 1);
+		end = (uintptr_t)a->end;
+	}
+
+	// Double check after grow (in case grow failed or size is just too huge)
+	if (aligned < current || aligned >= end || (end - aligned) < size) {
+		return NULL;
 	}
 
 	a->ptr = (char *)(aligned + size);
@@ -413,14 +474,7 @@ NONSTD_DEF int write_entire_file(const char *filepath, const void *data, size_t 
 	return written == size;
 }
 
-NONSTD_DEF stringv read_entire_file_sv(const char *filepath) {
-	size_t size = 0;
-	char *data = read_entire_file(filepath, &size);
-	if (!data) {
-		return (stringv){0};
-	}
-	return (stringv){.data = data, .length = size};
-}
+// read_entire_file_sv removed
 
 NONSTD_DEF stringb read_entire_file_sb(const char *filepath) {
 	size_t size = 0;

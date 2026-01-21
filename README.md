@@ -158,10 +158,11 @@ if (content) {
     FREE(content); // Standard free (unless using arena)
 }
 
-// Or read directly into a string view or builder
-stringv file_sv = read_entire_file_sv("config.ini");
-// ... use file_sv ...
-FREE((void*)file_sv.data); // Note: read_entire_file_sv allocates the data
+// Or read directly into a string builder
+stringb file_sb = read_entire_file_sb("config.ini");
+// ... use file_sb ...
+sb_free(&file_sb);
+
 ```
 
 ## Testing

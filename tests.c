@@ -784,6 +784,27 @@ MU_TEST(test_arena_alignment) {
 	arena_free(&a);
 }
 
+MU_TEST(test_arena_safety) {
+	Arena a = arena_make();
+
+	// Test 1: Integer overflow in allocation should be caught by safe_alloc
+	// Requesting 2 items of size (SIZE_MAX/2 + 1) should fail
+	// This tests ns_safe_malloc directly or via macro if we exposed it,
+	// but arena_alloc calls ensure/grow which calls ALLOC(char, size).
+	// To test ALLOC overflow: ALLOC(char, SIZE_MAX) is just 1*SIZE_MAX.
+	// We need a way to trigger safe_alloc failure.
+
+	// Let's test the underlying safe allocator directly since we exposed it in nonstd.h
+	void *p = safe_malloc(SIZE_MAX / 2 + 100, 2);
+	mu_check(p == NULL);
+
+	// Test 2: Ensure normal allocations still work
+	void *p2 = arena_alloc(&a, 100);
+	mu_check(p2 != NULL);
+
+	arena_free(&a);
+}
+
 // File I/O tests
 MU_TEST(test_file_io_basic) {
 	const char *filename = "test_io_basic.txt";
@@ -801,25 +822,6 @@ MU_TEST(test_file_io_basic) {
 	mu_check(strncmp(content, read_content, len) == 0);
 
 	FREE(read_content);
-	remove(filename);
-}
-
-MU_TEST(test_file_io_sv) {
-	const char *filename = "test_io_sv.txt";
-	stringv sv = sv_from_cstr("Hello from sv!");
-
-	// Write
-	mu_check(write_file_sv(filename, sv));
-
-	// Read
-	stringv read_sv = read_entire_file_sv(filename);
-	mu_check(read_sv.data != NULL);
-	mu_assert_int_eq(sv.length, read_sv.length);
-	mu_check(sv_equals(sv, read_sv));
-
-	// The data returned by read_entire_file_sv is malloc'd and needs freeing
-	// We cast away const to free it since we know it was allocated
-	free((char *)read_sv.data);
 	remove(filename);
 }
 
@@ -847,12 +849,6 @@ MU_TEST(test_file_io_read_missing) {
 	size_t len;
 	char *content = read_entire_file("non_existent_file.txt", &len);
 	mu_check(content == NULL);
-}
-
-MU_TEST(test_file_io_read_missing_sv) {
-	stringv sv = read_entire_file_sv("non_existent_file.txt");
-	mu_check(sv.data == NULL);
-	mu_assert_int_eq(0, sv.length);
 }
 
 MU_TEST(test_file_io_read_missing_sb) {
@@ -953,15 +949,14 @@ MU_TEST_SUITE(test_suite_arena) {
 	RUN_TEST_WITH_NAME(test_arena_basic);
 	RUN_TEST_WITH_NAME(test_arena_growth);
 	RUN_TEST_WITH_NAME(test_arena_alignment);
+	RUN_TEST_WITH_NAME(test_arena_safety);
 }
 
 MU_TEST_SUITE(test_suite_files) {
 	printf("\n[File I/O Tests]\n");
 	RUN_TEST_WITH_NAME(test_file_io_basic);
-	RUN_TEST_WITH_NAME(test_file_io_sv);
 	RUN_TEST_WITH_NAME(test_file_io_sb);
 	RUN_TEST_WITH_NAME(test_file_io_read_missing);
-	RUN_TEST_WITH_NAME(test_file_io_read_missing_sv);
 	RUN_TEST_WITH_NAME(test_file_io_read_missing_sb);
 }
 

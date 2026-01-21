@@ -23,12 +23,6 @@ int main(void) {
 		printf("Written test_sv.txt\n");
 	}
 
-	stringv sv_read = read_entire_file_sv("test_sv.txt");
-	if (sv_read.data) {
-		printf("Read sv: %.*s", (int)sv_read.length, sv_read.data);
-		free((char *)sv_read.data);
-	}
-
 	// 3. usage with string builder
 	stringb sb;
 	sb_init(&sb, 0);
