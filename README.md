@@ -156,7 +156,7 @@ char *content = read_entire_file("data.txt", &size);
 
 if (content) {
     printf("Read %zu bytes:\n%s\n", size, content);
-    FREE(content); // Standard free (unless using arena)
+    free(content); // Standard free (unless using arena)
 }
 
 // Or read directly into a string builder
