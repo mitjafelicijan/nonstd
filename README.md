@@ -6,7 +6,7 @@ ergonomic and productive. It aims to be C99 compliant.
 > [!IMPORTANT]
 > There are more involved libraries out there providing better granularity
 > and functionality. This library is intended for ease of use first and
-> foremost. It is not a replacement for those libraries.
+> foremost. It is not a replacement for those libraries. Use at your own risk.
 
 ## Features
 
@@ -220,3 +220,7 @@ To build and run the tests:
 ```bash
 make test
 ```
+
+## Acknowledgments
+
+- https://github.com/tsoding/nob.h

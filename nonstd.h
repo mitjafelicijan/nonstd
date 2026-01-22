@@ -60,7 +60,18 @@ NONSTD_DEF void *safe_realloc(void *ptr, size_t item_size, size_t count);
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(x, lo, hi) (MIN((hi), MAX((lo), (x))))
 
-#define UNUSED(x) (void)(x)
+// From https://github.com/tsoding/nob.h/blob/e2c9a46f01d052ab740140e74453665dc3334832/nob.h#L205-L206.
+#define UNUSED(value) (void)(value)
+#define TODO(message)                                                      \
+	do {                                                                   \
+		fprintf(stderr, "%s:%d: TODO: %s\n", __FILE__, __LINE__, message); \
+		abort();                                                           \
+	} while (0)
+#define UNREACHABLE(message)                                                      \
+	do {                                                                          \
+		fprintf(stderr, "%s:%d: UNREACHABLE: %s\n", __FILE__, __LINE__, message); \
+		abort();                                                                  \
+	} while (0)
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define STATIC_ASSERT(expr, msg) _Static_assert((expr), msg)
