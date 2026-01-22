@@ -5,7 +5,7 @@
 // This file provides both the interface and the implementation.
 // To instantiate the implementation,
 //     #define NONSTD_IMPLEMENTATION
-//  before including this file.
+// before including this file.
 
 #ifdef NONSTD_IMPLEMENTATION
 #ifndef _POSIX_C_SOURCE
