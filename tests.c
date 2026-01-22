@@ -974,20 +974,20 @@ MU_TEST(test_ppm_draw_helpers) {
 	Canvas img = ppm_init(100, 100);
 
 	// Test fill
-	ppm_fill(&img, CLR_RED);
+	ppm_fill(&img, COLOR_RED);
 	Color c1 = ppm_get_pixel(&img, 0, 0);
 	mu_assert_int_eq(255, c1.r);
 	mu_assert_int_eq(0, c1.g);
 
 	// Test rect
-	ppm_fill(&img, CLR_BLACK);
-	ppm_draw_rect(&img, 10, 10, 20, 20, CLR_WHITE);
+	ppm_fill(&img, COLOR_BLACK);
+	ppm_draw_rect(&img, 10, 10, 20, 20, COLOR_WHITE);
 	mu_assert_int_eq(255, ppm_get_pixel(&img, 10, 10).r);
 	mu_assert_int_eq(0, ppm_get_pixel(&img, 15, 15).r); // Inside should be black
 
 	// Test line
-	ppm_fill(&img, CLR_BLACK);
-	ppm_draw_line(&img, 0, 0, 10, 10, CLR_GREEN);
+	ppm_fill(&img, COLOR_BLACK);
+	ppm_draw_line(&img, 0, 0, 10, 10, COLOR_GREEN);
 	mu_assert_int_eq(255, ppm_get_pixel(&img, 5, 5).g);
 
 	// Test hexagon/color macros

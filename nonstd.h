@@ -263,14 +263,14 @@ typedef struct {
 #define COLOR_RGB(r, g, b) ((Color){(u8)(r), (u8)(g), (u8)(b)})
 #define COLOR_HEX(hex) ((Color){(u8)(((hex) >> 16) & 0xFF), (u8)(((hex) >> 8) & 0xFF), (u8)((hex) & 0xFF)})
 
-#define CLR_BLACK COLOR_RGB(0, 0, 0)
-#define CLR_WHITE COLOR_RGB(255, 255, 255)
-#define CLR_RED COLOR_RGB(255, 0, 0)
-#define CLR_GREEN COLOR_RGB(0, 255, 0)
-#define CLR_BLUE COLOR_RGB(0, 0, 255)
-#define CLR_YELLOW COLOR_RGB(255, 255, 0)
-#define CLR_MAGENTA COLOR_RGB(255, 0, 255)
-#define CLR_CYAN COLOR_RGB(0, 255, 255)
+#define COLOR_BLACK COLOR_RGB(0, 0, 0)
+#define COLOR_WHITE COLOR_RGB(255, 255, 255)
+#define COLOR_RED COLOR_RGB(255, 0, 0)
+#define COLOR_GREEN COLOR_RGB(0, 255, 0)
+#define COLOR_BLUE COLOR_RGB(0, 0, 255)
+#define COLOR_YELLOW COLOR_RGB(255, 255, 0)
+#define COLOR_MAGENTA COLOR_RGB(255, 0, 255)
+#define COLOR_CYAN COLOR_RGB(0, 255, 255)
 
 NONSTD_DEF Canvas ppm_init(u32 width, u32 height);
 NONSTD_DEF void ppm_free(Canvas *img);

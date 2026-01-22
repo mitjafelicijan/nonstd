@@ -19,6 +19,7 @@ ergonomic and productive. It aims to be C99 compliant.
 - **Memory Arena**: Simple block-based arena allocator for bulk memory management.
 - **File I/O**: Helper functions to read and write entire files with a single call.
 - **Logging**: Simple, leveled logging with ANSI colors and timestamps.
+- **Canvas & PPM**: Simple 2D drawing API with PPM (ASCII) import/export.
 
 ## Installation
 
@@ -182,6 +183,32 @@ LOG_ERROR_MSG("Connection failed");
 
 // Environment variable override supported:
 // LOG_LEVEL=0 (ERROR) ... 3 (DEBUG)
+```
+
+### 7. Canvas & PPM Images
+
+Create simple 2D images, draw shapes, and save to PPM (ASCII) format.
+
+```c
+// Initialize a 400x400 canvas
+Canvas canvas = ppm_init(400, 400);
+
+// Use predefined colors or HEX/RGB macros
+ppm_fill(&canvas, COLOR_HEX(0x1a1a1a));
+
+// Draw basic shapes
+ppm_draw_rect(&canvas, 50, 50, 100, 100, COLOR_RED);
+ppm_draw_circle(&canvas, 250, 100, 40, COLOR_BLUE);
+ppm_draw_line(&canvas, 200, 200, 350, 350, COLOR_GREEN);
+ppm_draw_triangle(&canvas, 50, 350, 150, 350, 100, 250, COLOR_YELLOW);
+
+// Save to file
+if (ppm_save(&canvas, "output.ppm")) {
+    printf("Image saved successfully!\n");
+}
+
+// Clean up
+ppm_free(&canvas);
 ```
 
 ## Testing
