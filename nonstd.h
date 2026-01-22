@@ -744,8 +744,9 @@ NONSTD_DEF void ppm_fill(Canvas *canvas, Color color) {
 }
 
 NONSTD_DEF void ppm_draw_rect(Canvas *canvas, u32 x, u32 y, u32 w, u32 h, Color color) {
-	if (w == 0 || h == 0)
+	if (w == 0 || h == 0) {
 		return;
+	}
 	for (u32 i = x; i < x + w; ++i) {
 		ppm_set_pixel(canvas, i, y, color);
 		ppm_set_pixel(canvas, i, y + h - 1, color);
