@@ -1,3 +1,4 @@
+# Build artifacts
 stringv
 stringb
 foreach
@@ -6,4 +7,7 @@ slice
 arena
 files
 logging
+ppm
 
+# Generated artifacts
+*.ppm

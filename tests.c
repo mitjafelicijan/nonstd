@@ -864,7 +864,7 @@ MU_TEST(test_logging_level_filtering) {
 
 	set_log_level(LOG_WARN);
 
-	log_message(tmp, LOG_INFO, "Info message");   // Should not be logged
+	log_message(tmp, LOG_INFO, "Info message");	  // Should not be logged
 	log_message(tmp, LOG_ERROR, "Error message"); // Should be logged
 
 	rewind(tmp);
@@ -910,9 +910,93 @@ MU_TEST(test_logging_format) {
 	mu_check(strstr(buffer, "Test 123 format") != NULL);
 	mu_check(strstr(buffer, "[INFO ]") != NULL);
 	// Check timestamp format roughly (YYYY-MM-DD)
-	mu_check(strstr(buffer, "20") != NULL); 
+	mu_check(strstr(buffer, "20") != NULL);
 
 	fclose(tmp);
+}
+
+// Image tests
+MU_TEST(test_ppm_init_free) {
+	Canvas img = ppm_init(100, 100);
+	mu_assert_int_eq(100, (int)img.width);
+	mu_assert_int_eq(100, (int)img.height);
+	mu_check(img.pixels != NULL);
+	ppm_free(&img);
+	mu_assert_int_eq(0, (int)img.width);
+	mu_assert_int_eq(0, (int)img.height);
+	mu_check(img.pixels == NULL);
+}
+
+MU_TEST(test_ppm_set_get_pixel) {
+	Canvas img = ppm_init(10, 10);
+	Color c = {255, 128, 64};
+	ppm_set_pixel(&img, 5, 5, c);
+	Color got = ppm_get_pixel(&img, 5, 5);
+	mu_assert_int_eq(255, got.r);
+	mu_assert_int_eq(128, got.g);
+	mu_assert_int_eq(64, got.b);
+
+	// Test out of bounds (should return black)
+	got = ppm_get_pixel(&img, 100, 100);
+	mu_assert_int_eq(0, got.r);
+
+	ppm_free(&img);
+}
+
+MU_TEST(test_ppm_save_read) {
+	Canvas img = ppm_init(10, 10);
+	for (u32 y = 0; y < 10; ++y) {
+		for (u32 x = 0; x < 10; ++x) {
+			ppm_set_pixel(&img, x, y, (Color){(u8)(x * 20), (u8)(y * 20), 100});
+		}
+	}
+
+	const char *tmp_ppm = "test_image.ppm";
+	mu_check(ppm_save(&img, tmp_ppm));
+
+	Canvas read = ppm_read(tmp_ppm);
+	mu_assert_int_eq((int)img.width, (int)read.width);
+	mu_assert_int_eq((int)img.height, (int)read.height);
+	mu_check(read.pixels != NULL);
+
+	for (u32 i = 0; i < 100; ++i) {
+		mu_assert_int_eq(img.pixels[i].r, read.pixels[i].r);
+		mu_assert_int_eq(img.pixels[i].g, read.pixels[i].g);
+		mu_assert_int_eq(img.pixels[i].b, read.pixels[i].b);
+	}
+
+	ppm_free(&img);
+	ppm_free(&read);
+	remove(tmp_ppm);
+}
+
+MU_TEST(test_ppm_draw_helpers) {
+	Canvas img = ppm_init(100, 100);
+
+	// Test fill
+	ppm_fill(&img, CLR_RED);
+	Color c1 = ppm_get_pixel(&img, 0, 0);
+	mu_assert_int_eq(255, c1.r);
+	mu_assert_int_eq(0, c1.g);
+
+	// Test rect
+	ppm_fill(&img, CLR_BLACK);
+	ppm_draw_rect(&img, 10, 10, 20, 20, CLR_WHITE);
+	mu_assert_int_eq(255, ppm_get_pixel(&img, 10, 10).r);
+	mu_assert_int_eq(0, ppm_get_pixel(&img, 15, 15).r); // Inside should be black
+
+	// Test line
+	ppm_fill(&img, CLR_BLACK);
+	ppm_draw_line(&img, 0, 0, 10, 10, CLR_GREEN);
+	mu_assert_int_eq(255, ppm_get_pixel(&img, 5, 5).g);
+
+	// Test hexagon/color macros
+	Color hex = COLOR_HEX(0x112233);
+	mu_assert_int_eq(0x11, hex.r);
+	mu_assert_int_eq(0x22, hex.g);
+	mu_assert_int_eq(0x33, hex.b);
+
+	ppm_free(&img);
 }
 
 // Test suites
@@ -1025,6 +1109,14 @@ MU_TEST_SUITE(test_suite_logging) {
 	RUN_TEST_WITH_NAME(test_logging_format);
 }
 
+MU_TEST_SUITE(test_suite_image) {
+	printf("\n[Image Tests]\n");
+	RUN_TEST_WITH_NAME(test_ppm_init_free);
+	RUN_TEST_WITH_NAME(test_ppm_set_get_pixel);
+	RUN_TEST_WITH_NAME(test_ppm_save_read);
+	RUN_TEST_WITH_NAME(test_ppm_draw_helpers);
+}
+
 int main(int argc, char *argv[]) {
 	(void)argc;
 	(void)argv;
@@ -1038,6 +1130,7 @@ int main(int argc, char *argv[]) {
 	MU_RUN_SUITE(test_suite_arena);
 	MU_RUN_SUITE(test_suite_files);
 	MU_RUN_SUITE(test_suite_logging);
+	MU_RUN_SUITE(test_suite_image);
 
 	MU_REPORT();
 

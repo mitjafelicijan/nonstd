@@ -7,14 +7,14 @@
 #ifndef NONSTD_H
 #define NONSTD_H
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef NONSTD_DEF
@@ -249,6 +249,41 @@ NONSTD_DEF void arena_grow(Arena *a, size_t min_size);
 NONSTD_DEF void *arena_alloc(Arena *a, size_t size);
 NONSTD_DEF void arena_free(Arena *a);
 
+// Image - simple RGB image structure
+typedef struct {
+	u8 r, g, b;
+} Color;
+
+typedef struct {
+	u32 width;
+	u32 height;
+	Color *pixels;
+} Canvas;
+
+#define COLOR_RGB(r, g, b) ((Color){(u8)(r), (u8)(g), (u8)(b)})
+#define COLOR_HEX(hex) ((Color){(u8)(((hex) >> 16) & 0xFF), (u8)(((hex) >> 8) & 0xFF), (u8)((hex) & 0xFF)})
+
+#define CLR_BLACK COLOR_RGB(0, 0, 0)
+#define CLR_WHITE COLOR_RGB(255, 255, 255)
+#define CLR_RED COLOR_RGB(255, 0, 0)
+#define CLR_GREEN COLOR_RGB(0, 255, 0)
+#define CLR_BLUE COLOR_RGB(0, 0, 255)
+#define CLR_YELLOW COLOR_RGB(255, 255, 0)
+#define CLR_MAGENTA COLOR_RGB(255, 0, 255)
+#define CLR_CYAN COLOR_RGB(0, 255, 255)
+
+NONSTD_DEF Canvas ppm_init(u32 width, u32 height);
+NONSTD_DEF void ppm_free(Canvas *img);
+NONSTD_DEF void ppm_set_pixel(Canvas *img, u32 x, u32 y, Color color);
+NONSTD_DEF Color ppm_get_pixel(const Canvas *img, u32 x, u32 y);
+NONSTD_DEF int ppm_save(const Canvas *img, const char *filename);
+NONSTD_DEF Canvas ppm_read(const char *filename);
+NONSTD_DEF void ppm_fill(Canvas *canvas, Color color);
+NONSTD_DEF void ppm_draw_rect(Canvas *canvas, u32 x, u32 y, u32 w, u32 h, Color color);
+NONSTD_DEF void ppm_draw_line(Canvas *canvas, i32 x0, i32 y0, i32 x1, i32 y1, Color color);
+NONSTD_DEF void ppm_draw_circle(Canvas *canvas, i32 x, i32 y, i32 r, Color color);
+NONSTD_DEF void ppm_draw_triangle(Canvas *canvas, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, Color color);
+
 // File I/O helpers
 NONSTD_DEF char *read_entire_file(const char *filepath, size_t *out_size);
 NONSTD_DEF int write_entire_file(const char *filepath, const void *data, size_t size);
@@ -297,6 +332,8 @@ NONSTD_DEF void *safe_realloc(void *ptr, size_t item_size, size_t count) {
 	return realloc(ptr, item_size * count);
 }
 
+// String View Implementation
+
 NONSTD_DEF stringv sv_from_cstr(const char *s) {
 	return (stringv){.data = s, .length = s ? strlen(s) : 0};
 }
@@ -329,6 +366,8 @@ NONSTD_DEF int sv_starts_with(stringv sv, stringv prefix) {
 NONSTD_DEF int sv_ends_with(stringv sv, stringv suffix) {
 	return sv.length >= suffix.length && memcmp(sv.data + sv.length - suffix.length, suffix.data, suffix.length) == 0;
 }
+
+// String Builder Implementation
 
 NONSTD_DEF void sb_init(stringb *sb, size_t initial_cap) {
 	sb->capacity = initial_cap ? initial_cap : 16;
@@ -411,6 +450,8 @@ NONSTD_DEF Arena arena_make(void) {
 	return a;
 }
 
+// Arena Implementation
+
 NONSTD_DEF void arena_grow(Arena *a, size_t min_size) {
 	size_t size = MAX(ARENA_DEFAULT_BLOCK_SIZE, min_size);
 	char *block = ALLOC(char, size);
@@ -451,6 +492,8 @@ NONSTD_DEF void arena_free(Arena *a) {
 	a->ptr = NULL;
 	a->end = NULL;
 }
+
+// File I/O Implementation
 
 NONSTD_DEF char *read_entire_file(const char *filepath, size_t *out_size) {
 	FILE *f = fopen(filepath, "rb");
@@ -571,8 +614,7 @@ NONSTD_DEF void log_message(FILE *stream, LogLevel level, const char *format, ..
 	const char *reset = isatty(fileno(stream)) ? COLOR_RESET : "";
 
 	const char *log_format = "%s[%s.%03d] [%-5s] ";
-	fprintf(stream, log_format, color, time_str, (int)(tv.tv_usec / 1000),
-			level_strings[level]);
+	fprintf(stream, log_format, color, time_str, (int)(tv.tv_usec / 1000), level_strings[level]);
 
 	va_list args;
 	va_start(args, format);
@@ -581,6 +623,165 @@ NONSTD_DEF void log_message(FILE *stream, LogLevel level, const char *format, ..
 
 	fprintf(stream, "%s\n", reset);
 	fflush(stream);
+}
+
+// PPM Image Implementation
+
+NONSTD_DEF Canvas ppm_init(u32 width, u32 height) {
+	Canvas img = {0};
+	img.width = width;
+	img.height = height;
+	img.pixels = ALLOC(Color, width * height);
+	if (img.pixels) {
+		memset(img.pixels, 0, sizeof(Color) * width * height);
+	}
+	return img;
+}
+
+NONSTD_DEF void ppm_free(Canvas *img) {
+	if (img->pixels) {
+		FREE(img->pixels);
+	}
+	img->width = 0;
+	img->height = 0;
+}
+
+NONSTD_DEF void ppm_set_pixel(Canvas *img, u32 x, u32 y, Color color) {
+	if (x < img->width && y < img->height) {
+		img->pixels[y * img->width + x] = color;
+	}
+}
+
+NONSTD_DEF Color ppm_get_pixel(const Canvas *img, u32 x, u32 y) {
+	if (x < img->width && y < img->height) {
+		return img->pixels[y * img->width + x];
+	}
+	return (Color){0, 0, 0};
+}
+
+NONSTD_DEF int ppm_save(const Canvas *img, const char *filename) {
+	FILE *f = fopen(filename, "w");
+	if (!f) {
+		return 0;
+	}
+
+	fprintf(f, "P3\n%u %u\n255\n", img->width, img->height);
+	for (u32 y = 0; y < img->height; ++y) {
+		for (u32 x = 0; x < img->width; ++x) {
+			Color c = ppm_get_pixel(img, x, y);
+			fprintf(f, "%d %d %d ", c.r, c.g, c.b);
+		}
+		fprintf(f, "\n");
+	}
+
+	fclose(f);
+	return 1;
+}
+
+NONSTD_DEF Canvas ppm_read(const char *filename) {
+	Canvas img = {0};
+	FILE *f = fopen(filename, "r");
+	if (!f) {
+		return img;
+	}
+
+	char magic[3];
+	if (fscanf(f, "%2s", magic) != 1 || strcmp(magic, "P3") != 0) {
+		fclose(f);
+		return img;
+	}
+
+	u32 w, h, max_val;
+	if (fscanf(f, "%u %u %u", &w, &h, &max_val) != 3) {
+		fclose(f);
+		return img;
+	}
+
+	img = ppm_init(w, h);
+	if (!img.pixels) {
+		fclose(f);
+		return img;
+	}
+
+	for (u32 i = 0; i < w * h; ++i) {
+		int r, g, b;
+		if (fscanf(f, "%d %d %d", &r, &g, &b) != 3) {
+			ppm_free(&img);
+			fclose(f);
+			return (Canvas){0};
+		}
+		img.pixels[i] = (Color){(u8)r, (u8)g, (u8)b};
+	}
+
+	fclose(f);
+	return img;
+}
+
+NONSTD_DEF void ppm_fill(Canvas *canvas, Color color) {
+	for (u32 i = 0; i < canvas->width * canvas->height; ++i) {
+		canvas->pixels[i] = color;
+	}
+}
+
+NONSTD_DEF void ppm_draw_rect(Canvas *canvas, u32 x, u32 y, u32 w, u32 h, Color color) {
+	if (w == 0 || h == 0)
+		return;
+	for (u32 i = x; i < x + w; ++i) {
+		ppm_set_pixel(canvas, i, y, color);
+		ppm_set_pixel(canvas, i, y + h - 1, color);
+	}
+	for (u32 j = y; j < y + h; ++j) {
+		ppm_set_pixel(canvas, x, j, color);
+		ppm_set_pixel(canvas, x + w - 1, j, color);
+	}
+}
+
+NONSTD_DEF void ppm_draw_line(Canvas *canvas, i32 x0, i32 y0, i32 x1, i32 y1, Color color) {
+	i32 dx = abs(x1 - x0);
+	i32 dy = -abs(y1 - y0);
+	i32 sx = x0 < x1 ? 1 : -1;
+	i32 sy = y0 < y1 ? 1 : -1;
+	i32 err = dx + dy;
+
+	while (1) {
+		ppm_set_pixel(canvas, (u32)x0, (u32)y0, color);
+		if (x0 == x1 && y0 == y1) {
+			break;
+		}
+
+		i32 e2 = 2 * err;
+		if (e2 >= dy) {
+			err += dy;
+			x0 += sx;
+		}
+		if (e2 <= dx) {
+			err += dx;
+			y0 += sy;
+		}
+	}
+}
+
+NONSTD_DEF void ppm_draw_circle(Canvas *canvas, i32 xm, i32 ym, i32 r, Color color) {
+	i32 x = -r, y = 0, err = 2 - 2 * r;
+	do {
+		ppm_set_pixel(canvas, (u32)(xm - x), (u32)(ym + y), color);
+		ppm_set_pixel(canvas, (u32)(xm - y), (u32)(ym - x), color);
+		ppm_set_pixel(canvas, (u32)(xm + x), (u32)(ym - y), color);
+		ppm_set_pixel(canvas, (u32)(xm + y), (u32)(ym + x), color);
+		r = err;
+		if (r <= y) {
+			err += ++y * 2 + 1;
+		}
+		if (r > x || err > y) {
+			err += ++x * 2 + 1;
+		}
+	} while (x < 0);
+}
+
+NONSTD_DEF void ppm_draw_triangle(Canvas *canvas, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, Color color) {
+	ppm_draw_line(canvas, x0, y0, x1, y1, color);
+	ppm_draw_line(canvas, x1, y1, x2, y2, color);
+	ppm_draw_line(canvas, x2, y2, x0, y0, color);
 }
 
 #endif // NONSTD_IMPLEMENTATION
